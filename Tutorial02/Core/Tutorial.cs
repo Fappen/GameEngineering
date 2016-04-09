@@ -64,30 +64,33 @@ namespace Fusee.Tutorial.Core
             {
                 distance = distance(vec3(mousePosition, 1), modelpos * 0.05f + 0.5f);  
 
-                gl_FragColor = vec4(modelpos*0.5 + 0.5, 1) * distance;
+                gl_FragColor = vec4(modelpos*0.5 + 0.5, 1) / (distance*1.5f);
             }";
 
 
         // Init is called on startup. 
         public override void Init()
         {
+            Width = 750;
+            Height = 750;
+
             _mesh = new Mesh
             {
                 Vertices = new[]
                 {
-                    new float3(-0.15f, -0.5f, -0.05f),    // Vertex 0
-                    new float3(0, -0.5f, -0.05f),        // Vertex 1
-                    new float3(0, 0, -0.05f),            // Vertex 2
-                    new float3(0.3f, 0, -0.05f),         // Vertex 3
-                    new float3(0.3f, 0.15f, -0.05f),     // Vertex 4
-                    new float3(0, 0.15f, -0.05f),        // Vertex 5
-                    new float3(0, 0.35f, -0.05f),        // Vertex 6
-                    new float3(0.3f, 0.35f, -0.05f),     // Vertex 7
-                    new float3(0.3f, 0.5f, -0.05f),      // Vertex 8
-                    new float3(0, 0.5f, -0.05f),         // Vertex 9
-                    new float3(-0.15f, 0.5f, -0.05f),     // Vertex 10
+                    new float3(-0.15f, -0.5f, -0.05f),  // Vertex 0
+                    new float3(0, -0.5f, -0.05f),       // Vertex 1
+                    new float3(0, 0, -0.05f),           // Vertex 2
+                    new float3(0.3f, 0, -0.05f),        // Vertex 3
+                    new float3(0.3f, 0.15f, -0.05f),    // Vertex 4
+                    new float3(0, 0.15f, -0.05f),       // Vertex 5
+                    new float3(0, 0.35f, -0.05f),       // Vertex 6
+                    new float3(0.3f, 0.35f, -0.05f),    // Vertex 7
+                    new float3(0.3f, 0.5f, -0.05f),     // Vertex 8
+                    new float3(0, 0.5f, -0.05f),        // Vertex 9
+                    new float3(-0.15f, 0.5f, -0.05f),   // Vertex 10
 
-                    new float3(-0.15f, -0.5f, 0.05f),    // Vertex 11
+                    new float3(-0.15f, -0.5f, 0.05f),   // Vertex 11
                     new float3(0, -0.5f, 0.05f),        // Vertex 12
                     new float3(0, 0, 0.05f),            // Vertex 13
                     new float3(0.3f, 0, 0.05f),         // Vertex 14
@@ -97,7 +100,7 @@ namespace Fusee.Tutorial.Core
                     new float3(0.3f, 0.35f, 0.05f),     // Vertex 18
                     new float3(0.3f, 0.5f, 0.05f),      // Vertex 19
                     new float3(0, 0.5f, 0.05f),         // Vertex 20
-                    new float3(-0.15f, 0.5f, 0.05f),     // Vertex 21
+                    new float3(-0.15f, 0.5f, 0.05f),    // Vertex 21
                 },
                 Triangles = new ushort[]
                 {
