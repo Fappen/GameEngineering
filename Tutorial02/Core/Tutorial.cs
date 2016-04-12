@@ -30,6 +30,7 @@ namespace Fusee.Tutorial.Core
         varying vec3 modelpos;
         varying mat4 xrotation;
         varying mat4 yrotation; 
+        varying vec4 position;
 
         void main()
         {
@@ -50,6 +51,7 @@ namespace Fusee.Tutorial.Core
                               0, 0, 0, 1);
 
             gl_Position = xrotation * yrotation * vec4(fuVertex, 1.0);
+            position = gl_Position;
         }";
 
         private const string _pixelShader = @"
@@ -57,14 +59,15 @@ namespace Fusee.Tutorial.Core
                 precision highp float;
             #endif#
             varying vec3 modelpos;
+            varying vec4 position;
             uniform vec2 mousePosition;
             float distance;
 
             void main()
             {
-                distance = distance(vec3(mousePosition, 1), modelpos * 0.05f + 0.5f);  
+                distance = distance(mousePosition, vec2(position.x, position.y));  
 
-                gl_FragColor = vec4(modelpos*0.5 + 0.5, 1) / (distance*1.5f);
+                gl_FragColor = vec4(modelpos,1) - vec4(distance,distance,distance,1)+1;
             }";
 
 
@@ -174,9 +177,11 @@ namespace Fusee.Tutorial.Core
 
             _degrees.x += Keyboard.UpDownAxis * 0.01f;
             _degrees.y += Keyboard.LeftRightAxis * 0.01f;
-
+            /*
             _mousePosition.x = Mouse.Position.x/Width;
             _mousePosition.y = Mouse.Position.y/Height;
+            */
+            _mousePosition = new float2((1.0f / (Width / 2.0f) * Mouse.Position.x) - 1.0f, (((1.0f / (Height / 2.0f)) * Mouse.Position.y) - 1.0f) * -1.0f);
 
             RC.SetShaderParam(_degreesParam, _degrees);
             RC.SetShaderParam(_mousePositionParam, _mousePosition);
