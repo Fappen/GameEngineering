@@ -28,8 +28,7 @@ namespace Fusee.Tutorial.Core
         attribute vec3 fuVertex;
         uniform vec2 degrees;
         varying vec3 modelpos;
-        varying mat4 xrotation;
-        varying mat4 yrotation; 
+
         varying vec4 position;
 
         void main()
@@ -39,7 +38,10 @@ namespace Fusee.Tutorial.Core
             float c = cos(degrees.x);
             float s2 = sin(degrees.y);
             float c2 = cos(degrees.y);
-            
+           
+            mat4 xrotation;
+            mat4 yrotation; 
+
             xrotation = mat4 (1, 0, 0, 0,
                               0, c, -s, 0,
                               0, s, c, 0,
@@ -57,17 +59,17 @@ namespace Fusee.Tutorial.Core
         private const string _pixelShader = @"
             #ifdef GL_ES
                 precision highp float;
-            #endif#
+            #endif
             varying vec3 modelpos;
             varying vec4 position;
             uniform vec2 mousePosition;
-            float distance;
+            float dist;
 
             void main()
             {
-                distance = distance(mousePosition, vec2(position.x, position.y));  
+                dist = distance(mousePosition, vec2(position.x, position.y));  
 
-                gl_FragColor = vec4(modelpos,1) - vec4(distance,distance,distance,1)+1;
+                gl_FragColor = vec4(modelpos,1) - vec4(dist,dist,dist,1) + 1.0;
             }";
 
 
