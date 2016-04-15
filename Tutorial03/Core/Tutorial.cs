@@ -1,4 +1,5 @@
 ﻿using Fusee.Base.Common;
+using Fusee.Base.Core;
 using Fusee.Engine.Common;
 using Fusee.Engine.Core;
 using Fusee.Math.Core;
@@ -10,23 +11,21 @@ namespace Fusee.Tutorial.Core
     [FuseeApplication(Name = "Tutorial Example", Description = "The official FUSEE Tutorial.")]
     public class Tutorial : RenderCanvas
     {
-        private Mesh _mesh;
+
         private const string _vertexShader = @"
         attribute vec3 fuVertex;
         attribute vec3 fuNormal;
-        uniform float alpha;
+        uniform mat4 xform;
         varying vec3 modelpos;
         varying vec3 normal;
+
         void main()
         {
             modelpos = fuVertex;
             normal = fuNormal;
-            float s = sin(alpha);
-            float c = cos(alpha);
-            gl_Position = vec4(0.5 * (fuVertex.x * c - fuVertex.z * s), 
-                               0.5 *  fuVertex.y, 
-                               0.5 * (fuVertex.x * s + fuVertex.z * c),
-                               1.0);
+
+            gl_Position = xform * vec4(fuVertex, 1.0);
+
         }";
 
         private const string _pixelShader = @"
@@ -41,9 +40,21 @@ namespace Fusee.Tutorial.Core
             gl_FragColor = vec4(normal*0.5 + 0.5, 1);
         }";
 
+        private Mesh _mesh;
 
-        private IShaderParam _alphaParam;
+        private IShaderParam _xformParam;
+        private float4x4 _xform;
         private float _alpha;
+        private float _beta;
+        private float _wheel;
+
+        private float _baseRotation;
+        private float _UpperArmRotation;
+        private float _ForearmRotation;
+        private float _ForearmMovement;
+
+        bool fpressed = false;
+        bool direction = true;
 
         // Init is called on startup. 
         public override void Init()
@@ -148,11 +159,14 @@ namespace Fusee.Tutorial.Core
 
             var shader = RC.CreateShader(_vertexShader, _pixelShader);
             RC.SetShader(shader);
-            _alphaParam = RC.GetShaderParam(shader, "alpha");
+            _xformParam = RC.GetShaderParam(shader, "xform");
+            _xform = float4x4.Identity;
             _alpha = 0;
+            _beta = 0;
+            _wheel = 0.2f;
 
             // Set the clear color for the backbuffer
-            RC.ClearColor = new float4(0.1f, 0.3f, 0.2f, 1);
+            RC.ClearColor = new float4(1, 1, 1, 1);
         }
 
         // RenderAFrame is called once a frame
@@ -163,17 +177,133 @@ namespace Fusee.Tutorial.Core
 
             float2 speed = Mouse.Velocity + Touch.GetVelocity(TouchPoints.Touchpoint_0);
             if (Mouse.LeftButton || Touch.GetTouchActive(TouchPoints.Touchpoint_0))
+            {
                 _alpha += speed.x * 0.0001f;
+                _beta += speed.y * 0.0001f;
 
-            RC.SetShaderParam(_alphaParam, _alpha);
+                if (_beta > 3.141592f / 2)
+                    _beta = 3.141592f / 2;
+                if (_beta < -3.141592f / 2)
+                    _beta = -3.141592f / 2;
 
+            }
+            /*
+            if (Mouse.WheelVel > 0 || Mouse.WheelVel < 0)
+            {
+                _wheel = _wheel + (Mouse.WheelVel/1000);
+                //Diagnostics.Log("Test:" + _wheel);
+            }*/
+
+            _baseRotation += Keyboard.ADAxis * 0.1f;
+
+            _UpperArmRotation += Keyboard.WSAxis * 0.1f;
+            if (_UpperArmRotation > 0.6f)
+            {
+                _UpperArmRotation = 0.6f;
+            }
+            if (_UpperArmRotation < -3.6f)
+            {
+                _UpperArmRotation = -3.6f;
+            }
+
+            _ForearmRotation += Keyboard.UpDownAxis * 0.1f;
+            if (_ForearmRotation > 1.0f)
+            {
+                _ForearmRotation = 1.0f;
+            }
+            if (_ForearmRotation < -1.0f)
+            {
+                _ForearmRotation = -1.0f;
+            }
+
+            if (Keyboard.IsKeyDown(KeyCodes.F))
+            {
+                fpressed = true;
+            }
+
+            if (Keyboard.IsKeyUp(KeyCodes.F))
+            {
+                fpressed = false;
+            }
+
+            if (fpressed)
+            {
+                //Diagnostics.Log("Test: " +fpressed);
+
+                if (direction == true)
+                {
+                    _ForearmMovement += 0.025f;
+
+                    if (_ForearmMovement >= 0.2f)
+                    {
+                        direction = false;
+                    }
+
+                } else if (direction == false)
+                {
+                    _ForearmMovement -=  0.025f;
+
+                    if (_ForearmMovement <= 0)
+                    {
+                        direction = true;
+                    }
+                }
+
+            }
+
+
+            var aspectRatio = Width / (float)Height;
+            var projection = float4x4.CreatePerspectiveFieldOfView(3.141592f * 0.25f, aspectRatio, 0.01f, 20);
+            var view = float4x4.CreateTranslation(0, 0, 3) * float4x4.CreateRotationY(_alpha) * float4x4.CreateRotationX(_beta);
+
+            // Plate cube
+            var plateModel = ModelXForm(new float3(0, -0.8f, 0), new float3(0, 0, 0), new float3(0, 0, 0));
+            _xform = projection * view * plateModel * float4x4.CreateScale(0.5f, 0.05f, 0.5f);
+            RC.SetShaderParam(_xformParam, _xform);
             RC.Render(_mesh);
+
+            // Base cube
+            var baseModel = ModelXForm(new float3(0, 0.5f, 0), new float3(0, _baseRotation, 0), new float3(0, -0.5f, 0));
+            _xform = projection * view * plateModel * baseModel * float4x4.CreateScale(0.1f, 0.5f, 0.1f);
+            RC.SetShaderParam(_xformParam, _xform);
+            RC.Render(_mesh);
+
+            // Upper Arm
+            var UpperArmModel = ModelXForm(new float3(-0.35f, -0.35f, 0.15f), new float3(0, 0, _UpperArmRotation), new float3(0.35f, 0, 0));
+            _xform = projection * view * baseModel * UpperArmModel * float4x4.CreateScale(0.4f, 0.05f, 0.05f);
+            RC.SetShaderParam(_xformParam, _xform);
+            RC.Render(_mesh);
+
+            // Forearm
+            var ForearmModel = ModelXForm(new float3(-0.65f, 0, 0.075f), new float3(0, 0, _ForearmRotation), new float3(0.275f, 0, 0)); //-0.65f
+            _xform = projection * view * baseModel * UpperArmModel* ForearmModel * float4x4.CreateScale(0.3f, 0.025f, 0.025f);
+            RC.SetShaderParam(_xformParam, _xform);
+            RC.Render(_mesh);
+
+            // Drill
+            var DrillModel = ModelXForm(new float3(-0.35f + _ForearmMovement, 0, 0), new float3(0, 0, 0), new float3(0.275f, 0, 0)); //-0.65f
+            _xform = projection * view * baseModel * UpperArmModel * ForearmModel * DrillModel * float4x4.CreateScale(0.2f, 0.02f, 0.02f);
+            RC.SetShaderParam(_xformParam, _xform);
+            RC.Render(_mesh);
+
+
+
+
 
             // Swap buffers: Show the contents of the backbuffer (containing the currently rendered farame) on the front buffer.
             Present();
         }
 
-        
+        static float4x4 ModelXForm(float3 pos, float3 rot, float3 pivot)
+        {
+            return float4x4.CreateTranslation(pos + pivot)
+                   * float4x4.CreateRotationY(rot.y)
+                   * float4x4.CreateRotationX(rot.x)
+                   * float4x4.CreateRotationZ(rot.z)
+                   * float4x4.CreateTranslation(-pivot);
+        }
+
+
         // Is called when the window was resized
         public override void Resize()
         {
