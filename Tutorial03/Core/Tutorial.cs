@@ -53,7 +53,6 @@ namespace Fusee.Tutorial.Core
         private float _ForearmRotation;
         private float _ForearmMovement;
 
-        bool fpressed = false;
         bool direction = true;
 
         // Init is called on startup. 
@@ -216,17 +215,8 @@ namespace Fusee.Tutorial.Core
                 _ForearmRotation = -1.0f;
             }
 
-            if (Keyboard.IsKeyDown(KeyCodes.F))
-            {
-                fpressed = true;
-            }
 
-            if (Keyboard.IsKeyUp(KeyCodes.F))
-            {
-                fpressed = false;
-            }
-
-            if (fpressed)
+            if (Keyboard.GetKey(KeyCodes.F))
             {
                 //Diagnostics.Log("Test: " +fpressed);
 

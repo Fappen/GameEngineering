@@ -81,7 +81,6 @@ JSIL.DeclareNamespace("Fusee.Tutorial.Core");
 
 
   function Tutorial__ctor () {
-    this.fpressed = false;
     this.direction = true;
     $T00().prototype._ctor.call(this);
   }; 
@@ -151,18 +150,10 @@ JSIL.DeclareNamespace("Fusee.Tutorial.Core");
     if (+this._ForearmRotation < -1) {
       this._ForearmRotation = -1;
     }
-    var flag8 = $T0B().get_Keyboard().IsKeyDown($T10().F);
-    if (flag8) {
-      this.fpressed = true;
-    }
-    var flag9 = $T0B().get_Keyboard().IsKeyUp($T10().F);
-    if (flag9) {
-      this.fpressed = false;
-    }
-    var flag10 = this.fpressed;
-    if (flag10) {
-      var flag11 = this.direction;
-      if (flag11) {
+    var key = $T0B().get_Keyboard().GetKey($T10().F);
+    if (key) {
+      var flag8 = this.direction;
+      if (flag8) {
         this._ForearmMovement = +this._ForearmMovement + 0.025;
         if (+this._ForearmMovement >= 0.2) {
           this.direction = false;
@@ -295,8 +286,6 @@ JSIL.DeclareNamespace("Fusee.Tutorial.Core");
     $.Field({Static:false, Public:false}, "_ForearmRotation", $.Single);
 
     $.Field({Static:false, Public:false}, "_ForearmMovement", $.Single);
-
-    $.Field({Static:false, Public:false}, "fpressed", $.Boolean);
 
     $.Field({Static:false, Public:false}, "direction", $.Boolean);
 
