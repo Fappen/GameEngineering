@@ -16,19 +16,23 @@ namespace Fusee.Tutorial.Core
 
     class Renderer : SceneVisitor
     {
-        public ShaderEffect StandardShaderEffect;
-        public ShaderEffect ShaderEffect;
-
-        public EffectPassDeclaration StandardEffectPassDeclaration;
+        public ShaderEffect _currentShader;
 
         public RenderContext RC;
         private ITexture _leafTexture;
         public float4x4 View;
         private Dictionary<MeshComponent, Mesh> _meshes = new Dictionary<MeshComponent, Mesh>();
         private CollapsingStateStack<float4x4> _model = new CollapsingStateStack<float4x4>();
-
-        public Dictionary<string, ITexture> textureDic = new Dictionary<string, ITexture>();
-        public Dictionary<string, ShaderEffect> shaderEffectsDic = new Dictionary<string, ShaderEffect>();
+        private static Dictionary<string, ITexture> textures = new Dictionary<string, ITexture>();
+        private static Dictionary<string, ShaderEffect> shadereffects = new Dictionary<string, ShaderEffect>();
+        private string stdVertexShader;
+        private string stdPixelShader;
+        private ITexture standardTex;
+        private string toonVertexShader;
+        private string toonPixelShader;
+        private ITexture standardTreeTex;
+        private string cellPixelShader;
+        private string cellVertexShader;
 
         private Mesh LookupMesh(MeshComponent mc)
         {
@@ -47,30 +51,62 @@ namespace Fusee.Tutorial.Core
             return mesh;
         }
 
+        public static void addToTextureDictionary(string key, ITexture val)
+        {
+            textures.Add(key, val);
+        }
+
+        public static void addToTextureDictionary(string key, string texture, RenderContext rc)
+        {
+            textures.Add(key, createTexture(texture, rc));
+        }
+
+        private static ITexture createTexture(string texture, RenderContext rc)
+        {
+            ImageData img = AssetStorage.Get<ImageData>(texture);
+            return rc.CreateTexture(img);
+        }
+
+        private static void addToShaderEffectDictionary(string key, ShaderEffect shadereffect)
+        {
+            shadereffects.Add(key, shadereffect);
+        }
+
         public Renderer(RenderContext rc)
         {
             RC = rc;
             // Read the Leaves.jpg image and upload it to the GPU
-            ImageData leaves = AssetStorage.Get<ImageData>("Leaves.jpg");
-            _leafTexture = RC.CreateTexture(leaves);
-            textureDic.Add("Leaves.jpg", _leafTexture);
+            //ImageData leaves = AssetStorage.Get<ImageData>("portrait.jpg");
+            //_leafTexture = RC.CreateTexture(leaves);
 
-            StandardEffectPassDeclaration = new EffectPassDeclaration
-            {
-                VS = AssetStorage.Get<string>("VertexShader.vert"),
-                PS = AssetStorage.Get<string>("PixelShader.frag"),
-                StateSet = new RenderStateSet
-                {
-                    ZEnable = true,
-                    CullMode = Cull.Counterclockwise,
-                }
-            };
+            addToTextureDictionary("Leaves.jpg", createTexture("Leaves.jpg", RC));
+            addToTextureDictionary("Treetex.jpg", createTexture("portrait.jpg", RC));
+            standardTex = textures["Leaves.jpg"];
+            standardTreeTex = textures["Treetex.jpg"];
 
-            StandardShaderEffect = new ShaderEffect(
+            stdVertexShader = AssetStorage.Get<string>("VertexShader.vert");
+            stdPixelShader = AssetStorage.Get<string>("PixelShader.frag");
+            toonVertexShader = AssetStorage.Get<string>("VertexShaderOutline.vert");
+            toonPixelShader = AssetStorage.Get<string>("PixelShaderOutline.frag");
+            cellVertexShader = AssetStorage.Get<string>("VertexShader2.vert");
+            cellPixelShader = AssetStorage.Get<string>("PixelShader2.frag");
+
+            Diagnostics.Log(textures);
+            // Initialize the shader(s)
+            ShaderEffect ShaderEffect = new ShaderEffect(
 
                 new[]
                 {
-                    StandardEffectPassDeclaration
+                    new EffectPassDeclaration
+                    {
+                        VS = stdVertexShader,
+                        PS = stdPixelShader,
+                        StateSet = new RenderStateSet
+                        {
+                            ZEnable = true,
+                            CullMode = Cull.Counterclockwise,
+                        }
+                    }
                 },
                 new[]
                 {
@@ -79,15 +115,62 @@ namespace Fusee.Tutorial.Core
                     new EffectParameterDeclaration {Name = "specfactor", Value= 1.0f},
                     new EffectParameterDeclaration {Name = "speccolor", Value = float3.Zero},
                     new EffectParameterDeclaration {Name = "ambientcolor", Value = float3.Zero},
-                    new EffectParameterDeclaration {Name = "texture", Value = textureDic["Leaves.jpg"]},
+                    new EffectParameterDeclaration {Name = "texture", Value = standardTex },
                     new EffectParameterDeclaration {Name = "texmix", Value = 0.0f},
                 });
 
-            StandardShaderEffect.AttachToContext(RC);
+            ShaderEffect cartoon = new ShaderEffect(
+            new[]
+                {
+                    //First Effect Pass Outline
+                    new EffectPassDeclaration
+                    {
+                        VS = toonVertexShader,
+                        PS = toonPixelShader,
+                        StateSet = new RenderStateSet
+                        {
+                            ZEnable = true,
+                            CullMode = Cull.Clockwise,
+                            //FillMode = FillMode.Wireframe,
+                        }
+                    }
+                    //Second Effect Pass Cell Shading
+                     ,new EffectPassDeclaration
+                    {
+                        VS = cellVertexShader,
+                        PS = cellPixelShader,
+                        StateSet = new RenderStateSet
+                        {
+                            ZEnable = true,
+                            CullMode = Cull.Clockwise,
+                            //FillMode = FillMode.Wireframe,
+                        }
+                    }
 
-            shaderEffectsDic.Add("standard", StandardShaderEffect);
+                },
+                new[]
+                {
+                    new EffectParameterDeclaration {Name = "albedo", Value = float3.One},
+                    new EffectParameterDeclaration {Name = "shininess", Value = 1.0f},
+                    new EffectParameterDeclaration {Name = "specfactor", Value= 1.0f},
+                    new EffectParameterDeclaration {Name = "speccolor", Value = float3.Zero},
+                    new EffectParameterDeclaration {Name = "ambientcolor", Value = float3.Zero},
+                    new EffectParameterDeclaration {Name = "texture", Value = standardTex},
+                    new EffectParameterDeclaration {Name = "texmix", Value = 0.0f},
+                    new EffectParameterDeclaration {Name = "linecolor", Value = float4.Zero},
+                    new EffectParameterDeclaration {Name = "linewidth", Value = float2.One * 0.5f}
+                });
 
+            addToShaderEffectDictionary("standard", ShaderEffect);
+            addToShaderEffectDictionary("Tree.1", cartoon);
+            addToShaderEffectDictionary("Tree.2", cartoon);
+            addToShaderEffectDictionary("Tree.3", cartoon);
+            addToShaderEffectDictionary("Tree.4", cartoon);
+            addToShaderEffectDictionary("Tree.5", cartoon);
+            addToShaderEffectDictionary("Tree", cartoon);
 
+            ShaderEffect.AttachToContext(RC);
+            cartoon.AttachToContext(RC);
         }
 
         protected override void InitState()
@@ -109,77 +192,69 @@ namespace Fusee.Tutorial.Core
         {
             string name = this.CurrentNode.Name;
             ShaderEffect effect;
-            if (shaderEffectsDic.TryGetValue(name, out effect))
+            if (shadereffects.TryGetValue(name, out effect))
             {
                 effect.RenderMesh(LookupMesh(mesh));
             }
             else
             {
-                shaderEffectsDic["standard"].RenderMesh(LookupMesh(mesh));
+                shadereffects["standard"].RenderMesh(LookupMesh(mesh));
             }
-
-
-            /*if (ShaderEffect != null)
-            {*/
-            //    ShaderEffect.RenderMesh(LookupMesh(mesh));
-
             // RC.Render(LookupMesh(mesh));
         }
         [VisitMethod]
         void OnMaterial(MaterialComponent material)
         {
-            if (CurrentNode.Name != null && shaderEffectsDic.ContainsKey(CurrentNode.Name) != false)
+            ShaderEffect _currentShader;
+            ShaderEffect tempValue;
+            string name = this.CurrentNode.Name;
+            if (shadereffects.TryGetValue(name, out tempValue))
             {
-                ShaderEffect = shaderEffectsDic[CurrentNode.Name];
-
-            } else
+                _currentShader = tempValue;
+            }
+            else
             {
-                ShaderEffect = shaderEffectsDic["standard"];
+                _currentShader = shadereffects["standard"];
             }
 
             if (material.HasDiffuse)
             {
-                ShaderEffect.SetEffectParam("albedo", material.Diffuse.Color);
+                _currentShader.SetEffectParam("albedo", material.Diffuse.Color);
                 ITexture value;
-
-
-                if (material.Diffuse.Texture != null && textureDic.TryGetValue(material.Diffuse.Texture, out value))
+                if (material.Diffuse.Texture != null && textures.TryGetValue(material.Diffuse.Texture, out value))
                 {
-                    ShaderEffect.SetEffectParam("texture", value);
-                    ShaderEffect.SetEffectParam("texmix", 1.0f);
+                    _currentShader.SetEffectParam("texture", value);
+                    _currentShader.SetEffectParam("texmix", 1.0f);
                 }
                 else
                 {
-                    ShaderEffect.SetEffectParam("texmix", 0.0f);
+                    _currentShader.SetEffectParam("texmix", 0.0f);
                 }
             }
             else
             {
-                ShaderEffect.SetEffectParam("albedo", float3.Zero);
+                _currentShader.SetEffectParam("albedo", float3.Zero);
             }
             if (material.HasSpecular)
             {
-                ShaderEffect.SetEffectParam("shininess", material.Specular.Shininess);
-                ShaderEffect.SetEffectParam("specfactor", material.Specular.Intensity);
-                ShaderEffect.SetEffectParam("speccolor", material.Specular.Color);
+                _currentShader.SetEffectParam("shininess", material.Specular.Shininess);
+                _currentShader.SetEffectParam("specfactor", material.Specular.Intensity);
+                _currentShader.SetEffectParam("speccolor", material.Specular.Color);
             }
             else
             {
-                ShaderEffect.SetEffectParam("shininess", 0);
-                ShaderEffect.SetEffectParam("specfactor", 0);
-                ShaderEffect.SetEffectParam("speccolor", float3.Zero);
+                _currentShader.SetEffectParam("shininess", 0);
+                _currentShader.SetEffectParam("specfactor", 0);
+                _currentShader.SetEffectParam("speccolor", float3.Zero);
             }
             if (material.HasEmissive)
             {
-                ShaderEffect.SetEffectParam("ambientcolor", material.Emissive.Color);
+                _currentShader.SetEffectParam("ambientcolor", material.Emissive.Color);
             }
             else
             {
-                ShaderEffect.SetEffectParam("ambientcolor", float3.Zero);
+                _currentShader.SetEffectParam("ambientcolor", float3.Zero);
             }
-            ShaderEffect.AttachToContext(RC);
-
-            
         }
         [VisitMethod]
         void OnTransform(TransformComponent xform)
@@ -246,30 +321,6 @@ namespace Fusee.Tutorial.Core
 
             // Set the clear color for the backbuffer
             RC.ClearColor = new float4(1, 1, 1, 1);
-
-
-
-            // Initialize the shader(s)
-            
-            _renderer.shaderEffectsDic.Add("Kugel.3",new ShaderEffect(
-
-                new[]
-                {
-                    _renderer.StandardEffectPassDeclaration
-                },
-                new[]
-                {
-                    new EffectParameterDeclaration {Name = "albedo", Value = float3.One},
-                    new EffectParameterDeclaration {Name = "shininess", Value = 1.0f},
-                    new EffectParameterDeclaration {Name = "specfactor", Value= 1.0f},
-                    new EffectParameterDeclaration {Name = "speccolor", Value = float3.Zero},
-                    new EffectParameterDeclaration {Name = "ambientcolor", Value = float3.Zero},
-                    new EffectParameterDeclaration {Name = "texture", Value = _renderer.textureDic["Leaves.jpg"]},
-                    new EffectParameterDeclaration {Name = "texmix", Value = 0.0f},
-                }));
-
-            _renderer.shaderEffectsDic["Kugel.3"].AttachToContext(_renderer.RC);
-
         }
 
         // RenderAFrame is called once a frame

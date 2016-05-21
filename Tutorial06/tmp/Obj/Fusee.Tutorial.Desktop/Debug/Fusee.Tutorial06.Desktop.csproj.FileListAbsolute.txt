@@ -7,3 +7,8 @@ C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\tmp\Obj\Fusee.Tutori
 C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\tmp\Obj\Fusee.Tutorial.Desktop\Debug\Fusee.Tutorial.Desktop.exe
 C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\tmp\Obj\Fusee.Tutorial.Desktop\Debug\Fusee.Tutorial.Desktop.pdb
 C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\bin\Debug\Desktop\Assets\Leaves.jpg
+C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\bin\Debug\Desktop\Assets\PixelShader2.frag
+C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\bin\Debug\Desktop\Assets\VertexShader2.vert
+C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\bin\Debug\Desktop\Assets\VertexShaderOutline.vert
+C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\bin\Debug\Desktop\Assets\PixelShaderOutline.frag
+C:\Users\Fabian\Documents\GitHub\GameEngineering\Tutorial06\bin\Debug\Desktop\Assets\portrait.jpg
