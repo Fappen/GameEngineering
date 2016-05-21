@@ -83,6 +83,11 @@ namespace Fusee.Tutorial.Core
                     new EffectParameterDeclaration {Name = "texmix", Value = 0.0f},
                 });
 
+            StandardShaderEffect.AttachToContext(RC);
+
+            shaderEffectsDic.Add("standard", StandardShaderEffect);
+
+
         }
 
         protected override void InitState()
@@ -102,10 +107,22 @@ namespace Fusee.Tutorial.Core
         [VisitMethod]
         void OnMesh(MeshComponent mesh)
         {
+            string name = this.CurrentNode.Name;
+            ShaderEffect effect;
+            if (shaderEffectsDic.TryGetValue(name, out effect))
+            {
+                effect.RenderMesh(LookupMesh(mesh));
+            }
+            else
+            {
+                shaderEffectsDic["standard"].RenderMesh(LookupMesh(mesh));
+            }
+
+
             /*if (ShaderEffect != null)
             {*/
-                ShaderEffect.RenderMesh(LookupMesh(mesh));
-            
+            //    ShaderEffect.RenderMesh(LookupMesh(mesh));
+
             // RC.Render(LookupMesh(mesh));
         }
         [VisitMethod]
@@ -117,21 +134,18 @@ namespace Fusee.Tutorial.Core
 
             } else
             {
-                ShaderEffect = StandardShaderEffect;
+                ShaderEffect = shaderEffectsDic["standard"];
             }
 
             if (material.HasDiffuse)
             {
                 ShaderEffect.SetEffectParam("albedo", material.Diffuse.Color);
-                
-                if (material.Diffuse.Texture != null)
+                ITexture value;
+
+
+                if (material.Diffuse.Texture != null && textureDic.TryGetValue(material.Diffuse.Texture, out value))
                 {
-                    
-                    //Diagnostics.Log("Textur: " + ShaderEffect.GetEffectParam("texture"));
-                   
-                    //Diagnostics.Log(material.Diffuse.Texture);
-                    /* ShaderEffect.SetEffectParam("texture", material.Diffuse.Texture);*/
-                    //ShaderEffect.SetEffectParam("texture", Sh);
+                    ShaderEffect.SetEffectParam("texture", value);
                     ShaderEffect.SetEffectParam("texmix", 1.0f);
                 }
                 else
@@ -254,6 +268,7 @@ namespace Fusee.Tutorial.Core
                     new EffectParameterDeclaration {Name = "texmix", Value = 0.0f},
                 }));
 
+            _renderer.shaderEffectsDic["Kugel.3"].AttachToContext(_renderer.RC);
 
         }
 
